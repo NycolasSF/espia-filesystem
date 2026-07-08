@@ -62,4 +62,7 @@ Cada card tem um **status de aprovação** (A revisar / Aprovado / Reprovado / P
 
 ## Estado
 
-Fases 1 (MVP navegável), 2 (edição + save seguro), 3 (Mesa de Revisão), 4 (gesto `espia` + janela de app) e 5 (mesa de aprovação por status) entregues, mais abas de arquivos. Refinamentos adiados no plano do hub: `_features/2026-06-21-visualizador-hub-app-proprio.md`.
+Fases 1 (MVP navegável), 2 (edição + save seguro), 3 (Mesa de Revisão), 4 (gesto `espia` + janela de app) e 5 (mesa de aprovação por status) entregues, mais abas de arquivos.
+
+- Backlog de features **+ plano de migração desktop (Electron)**: [`FEATURES.md`](FEATURES.md)
+- Histórico das fases web e decisões: `_features/2026-06-21-visualizador-hub-app-proprio.md` (no hub)
