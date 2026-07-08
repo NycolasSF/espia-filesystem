@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Espia — Visualizador do Hub</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+  <!-- ================= TOPBAR ================= -->
+  <div class="topbar">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4 9L2.5 4.5L7 7.2" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" style="color:var(--accent-ember-soft)"/>
+        <path d="M20 9L21.5 4.5L17 7.2" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" style="color:var(--accent-ember-soft)"/>
+        <path d="M4 9C4 9 5 15.5 8.2 18.2C9.6 19.4 10.7 20 12 20C13.3 20 14.4 19.4 15.8 18.2C19 15.5 20 9 20 9C17.7 7.6 15 7.2 12 7.2C9 7.2 6.3 7.6 4 9Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" style="color:var(--accent-ember)"/>
+        <circle cx="9.7" cy="12.4" r="1" fill="var(--text-primary)"/>
+        <circle cx="14.3" cy="12.4" r="1" fill="var(--text-primary)"/>
+        <path d="M11.2 15.1C11.6 15.5 12.4 15.5 12.8 15.1" stroke="var(--accent-ember-soft)" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
+      <div><div class="brand-name"><b>Espia</b></div></div>
+      <span class="brand-tag">boca da toca</span>
+    </div>
+
+    <div class="breadcrumb" id="breadcrumb">
+      <span class="seg">selecione um arquivo na árvore</span>
+    </div>
+
+    <div class="topbar-search">
+      <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M20 20L16.4 16.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <span>Buscar no hub...</span>
+      <kbd>Ctrl K</kbd>
+    </div>
+
+    <div class="topbar-actions">
+      <div class="avatar">NF</div>
+    </div>
+  </div>
+
+  <!-- ================= BODY ================= -->
+  <div class="body">
+    <aside class="sidebar">
+      <div class="sidebar-head"><span>Explorador . claude-projetos</span></div>
+      <div class="tree-scroll" id="tree"></div>
+      <div class="sidebar-foot"><span class="pulse"></span> <span id="foot-status">conectado</span></div>
+    </aside>
+
+    <main class="main">
+      <div class="view-toolbar">
+        <div class="view-tabs">
+          <div class="view-tab active" id="tab-arquivo">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M6 2h9l5 5v15H6V2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M15 2v5h5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+            Arquivo
+          </div>
+          <div class="view-tab" id="tab-galeria">
+            <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1.4" stroke="currentColor" stroke-width="1.8"/><rect x="14" y="3" width="7" height="7" rx="1.4" stroke="currentColor" stroke-width="1.8"/><rect x="3" y="14" width="7" height="7" rx="1.4" stroke="currentColor" stroke-width="1.8"/><rect x="14" y="14" width="7" height="7" rx="1.4" stroke="currentColor" stroke-width="1.8"/></svg>
+            Mesa de Revisão
+          </div>
+        </div>
+
+        <div class="eye-code-toggle hidden" id="ec-toggle">
+          <div class="ec-btn eye active" id="mode-eye">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg>
+            Olho
+          </div>
+          <div class="ec-btn code" id="mode-code">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M8 6L2 12l6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Codigo
+          </div>
+        </div>
+      </div>
+
+      <div class="tabbar" id="tabbar" style="display:none"></div>
+
+      <div class="content-area" id="content">
+        <div class="placeholder">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/></svg>
+          <div class="big">Espia está de olho no hub</div>
+          <div>Clique numa pasta para expandir, num arquivo para visualizar.</div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ================= STATUS BAR ================= -->
+  <div class="statusbar">
+    <div class="sb-group">
+      <span class="sb-item brand-dot" id="sb-type">—</span>
+      <span class="sb-item" id="sb-enc">UTF-8</span>
+    </div>
+    <div class="sb-group">
+      <span class="sb-item" id="sb-size"></span>
+      <span class="sb-item" id="sb-path"></span>
+      <span class="sb-item">Espia v0.1</span>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

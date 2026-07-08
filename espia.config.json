@@ -1,0 +1,23 @@
+{
+  "root": "F:\\claude-projetos",
+  "port": 4600,
+  "ignore": [
+    "node_modules",
+    ".node_modules",
+    ".venv",
+    "venv",
+    ".git",
+    "chroma_db",
+    "__pycache__",
+    "dist",
+    "build",
+    ".obsidian",
+    "zz_descartar",
+    ".DS_Store",
+    "desktop.ini",
+    "Thumbs.db",
+    ".espia.json"
+  ],
+  "maxTextBytes": 10485760,
+  "maxRenderBytes": 2097152
+}

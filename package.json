@@ -1,0 +1,17 @@
+{
+  "name": "espia",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Espia — visualizador de arquivos do hub (a raposa espia da boca da toca)",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test_smoke.mjs"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "highlight.js": "^11.11.1",
+    "markdown-it": "^14.1.0",
+    "sanitize-html": "^2.14.0"
+  }
+}

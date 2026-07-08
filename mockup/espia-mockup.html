@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Espia — Visualizador do Hub</title>
+<style>
+  :root{
+    --bg-app:#0c0e10;
+    --bg-panel:#131619;
+    --bg-elevated:#1a1e22;
+    --bg-elevated-2:#20242a;
+    --border:#24292e;
+    --border-soft:#1c2024;
+    --text-primary:#e9e6e0;
+    --text-secondary:#9a9490;
+    --text-tertiary:#63605c;
+    --accent-ember:#e8792c;
+    --accent-ember-soft:#f2a65a;
+    --accent-gold:#d9a441;
+    --accent-info:#7ba0b0;
+    --success:#6fae7f;
+    --warning:#d9a441;
+    --danger:#c25c4f;
+    --mono: 'Cascadia Code','Consolas','SFMono-Regular','Courier New',monospace;
+    --sans: 'Segoe UI Variable Display','Segoe UI',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif;
+    --radius-sm:6px;
+    --radius-md:10px;
+    --radius-lg:16px;
+    --shadow-panel: 0 1px 0 rgba(0,0,0,.4), 0 12px 32px -12px rgba(0,0,0,.55);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 600px at 14% -10%, rgba(232,121,44,.06), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(123,160,176,.05), transparent 55%),
+      var(--bg-app);
+    color:var(--text-primary);
+    font-family:var(--sans);
+    font-size:13.5px;
+    -webkit-font-smoothing:antialiased;
+    display:grid;
+    grid-template-rows:52px 1fr 26px;
+    grid-template-columns:1fr;
+    min-width:1280px;
+    height:100vh;
+    overflow:hidden;
+  }
+
+  ::-webkit-scrollbar{width:10px;height:10px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:#2a2f34;border-radius:8px;border:2px solid transparent;background-clip:padding-box;}
+  ::-webkit-scrollbar-thumb:hover{background:#363c42;background-clip:padding-box;}
+
+  /* ================= TOPBAR ================= */
+  .topbar{
+    grid-column:1/-1;
+    display:flex;
+    align-items:center;
+    gap:18px;
+    padding:0 14px 0 16px;
+    background:linear-gradient(180deg, var(--bg-panel), #101315);
+    border-bottom:1px solid var(--border);
+    z-index:20;
+  }
+  .brand{
+    display:flex;align-items:center;gap:9px;
+    padding-right:16px;
+    border-right:1px solid var(--border-soft);
+    height:52px;
+  }
+  .brand svg{width:22px;height:22px;flex:none;}
+  .brand-name{font-weight:600;font-size:14.5px;letter-spacing:.2px;color:var(--text-primary);}
+  .brand-name b{color:var(--accent-ember-soft);font-weight:700;}
+  .brand-tag{font-size:10px;color:var(--text-tertiary);letter-spacing:1.6px;text-transform:uppercase;margin-left:2px;}
+
+  .breadcrumb{
+    display:flex;align-items:center;gap:6px;
+    color:var(--text-secondary);
+    font-size:12.5px;
+    overflow:hidden;
+    white-space:nowrap;
+    flex:1;
+    min-width:0;
+  }
+  .breadcrumb .seg{padding:4px 8px;border-radius:6px;color:var(--text-secondary);}
+  .breadcrumb .seg.file{
+    color:var(--text-primary);
+    background:var(--bg-elevated);
+    border:1px solid var(--border);
+    display:flex;align-items:center;gap:6px;
+  }
+  .breadcrumb .sep{color:var(--text-tertiary);font-size:11px;}
+  .dot-md{width:7px;height:7px;border-radius:2px;background:var(--accent-info);flex:none;}
+
+  .topbar-search{
+    display:flex;align-items:center;gap:8px;
+    width:280px;
+    padding:7px 12px;
+    background:var(--bg-elevated);
+    border:1px solid var(--border);
+    border-radius:8px;
+    color:var(--text-tertiary);
+    font-size:12.5px;
+  }
+  .topbar-search svg{width:14px;height:14px;opacity:.7;flex:none;}
+  .topbar-search kbd{
+    margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--text-tertiary);
+    background:var(--bg-elevated-2);border:1px solid var(--border);border-radius:4px;padding:1px 5px;
+  }
+
+  .topbar-actions{display:flex;align-items:center;gap:10px;}
+  .icon-btn{
+    width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;
+    color:var(--text-secondary);background:transparent;border:1px solid transparent;cursor:pointer;
+  }
+  .icon-btn:hover{background:var(--bg-elevated);border-color:var(--border);color:var(--text-primary);}
+  .icon-btn svg{width:16px;height:16px;}
+  .avatar{
+    width:28px;height:28px;border-radius:50%;
+    background:linear-gradient(135deg,var(--accent-ember),var(--accent-gold));
+    display:flex;align-items:center;justify-content:center;
+    font-size:11px;font-weight:700;color:#1a0f06;
+  }
+
+  /* ================= BODY GRID ================= */
+  .body{
+    display:grid;
+    grid-template-columns:272px 1fr;
+    min-height:0;
+    overflow:hidden;
+  }
+
+  /* ================= SIDEBAR ================= */
+  .sidebar{
+    background:var(--bg-panel);
+    border-right:1px solid var(--border);
+    display:flex;flex-direction:column;
+    min-height:0;
+  }
+  .sidebar-head{
+    padding:14px 14px 8px;
+    font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;
+    color:var(--text-tertiary);font-weight:600;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .sidebar-head .chev-all{cursor:pointer;color:var(--text-tertiary);width:14px;height:14px;}
+  .tree-scroll{flex:1;overflow-y:auto;padding:2px 8px 16px;}
+
+  .tree-item{
+    display:flex;align-items:center;gap:6px;
+    padding:5px 8px;border-radius:6px;
+    cursor:pointer;
+    color:var(--text-secondary);
+    white-space:nowrap;
+    user-select:none;
+  }
+  .tree-item:hover{background:var(--bg-elevated);color:var(--text-primary);}
+  .tree-item.active{
+    background:linear-gradient(90deg, rgba(232,121,44,.16), rgba(232,121,44,.05));
+    color:var(--text-primary);
+    box-shadow:inset 2px 0 0 var(--accent-ember);
+  }
+  .tree-item .chev{width:10px;height:10px;flex:none;color:var(--text-tertiary);transition:transform .12s ease;}
+  .tree-item.folder.open > .chev{transform:rotate(90deg);}
+  .tree-item .fico{
+    width:15px;height:15px;flex:none;border-radius:4px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:8px;font-weight:800;color:#0c0e10;
+  }
+  .tree-item .folder-ico{width:14px;height:14px;flex:none;color:var(--accent-ember-soft);}
+  .tree-item.folder.open .folder-ico{color:var(--accent-gold);}
+  .tree-label{overflow:hidden;text-overflow:ellipsis;font-size:12.5px;}
+
+  .fico.md{background:var(--accent-info);}
+  .fico.html{background:#e0674f;}
+  .fico.png{background:#b58af0;}
+  .fico.mp4{background:#f06b9f;}
+  .fico.wav{background:#59c2ae;}
+  .fico.py{background:#5fb87a;}
+
+  .tree-children{padding-left:14px;overflow:hidden;}
+  .tree-children.collapsed{display:none;}
+
+  .sidebar-foot{
+    padding:10px 14px;border-top:1px solid var(--border-soft);
+    display:flex;align-items:center;gap:8px;
+    color:var(--text-tertiary);font-size:11px;
+  }
+  .sidebar-foot .pulse{width:7px;height:7px;border-radius:50%;background:var(--success);box-shadow:0 0 0 3px rgba(111,174,127,.15);}
+
+  /* ================= MAIN ================= */
+  .main{display:flex;flex-direction:column;min-height:0;min-width:0;background:var(--bg-app);}
+
+  .view-toolbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 20px;border-bottom:1px solid var(--border);
+    background:var(--bg-panel);
+  }
+  .view-tabs{display:flex;gap:4px;background:var(--bg-elevated);padding:3px;border-radius:9px;border:1px solid var(--border);}
+  .view-tab{
+    padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;color:var(--text-secondary);
+    cursor:pointer;display:flex;align-items:center;gap:6px;
+  }
+  .view-tab svg{width:13px;height:13px;}
+  .view-tab.active{background:var(--bg-elevated-2);color:var(--text-primary);box-shadow:0 1px 0 rgba(255,255,255,.03) inset, 0 1px 4px rgba(0,0,0,.4);}
+
+  .eye-code-toggle{display:flex;align-items:center;gap:2px;background:var(--bg-elevated);padding:3px;border-radius:9px;border:1px solid var(--border);}
+  .ec-btn{
+    padding:6px 13px;border-radius:6px;font-size:12px;font-weight:600;color:var(--text-secondary);
+    cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .12s,color .12s;
+  }
+  .ec-btn svg{width:14px;height:14px;}
+  .ec-btn.active.eye{background:rgba(232,121,44,.18);color:var(--accent-ember-soft);}
+  .ec-btn.active.code{background:rgba(123,160,176,.16);color:var(--accent-info);}
+
+  .content-area{flex:1;min-height:0;overflow:hidden;position:relative;}
+  .panel{position:absolute;inset:0;overflow-y:auto;}
+  .panel.hidden{display:none;}
+
+  /* ---------- markdown render ---------- */
+  .doc-wrap{max-width:760px;margin:0 auto;padding:46px 40px 90px;}
+  .doc-eyebrow{
+    display:inline-flex;align-items:center;gap:6px;
+    font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--accent-ember-soft);
+    background:rgba(232,121,44,.1);border:1px solid rgba(232,121,44,.25);
+    padding:4px 10px;border-radius:20px;margin-bottom:16px;
+  }
+  .doc-title{font-size:29px;font-weight:700;line-height:1.25;margin:0 0 10px;color:#f4f1ec;letter-spacing:-.3px;}
+  .doc-meta{display:flex;align-items:center;gap:10px;color:var(--text-tertiary);font-size:12.5px;margin-bottom:34px;padding-bottom:22px;border-bottom:1px solid var(--border-soft);}
+  .doc-meta .sep{color:var(--border);}
+  .doc-meta .agent-chip{
+    display:inline-flex;align-items:center;gap:5px;color:var(--accent-gold);
+    background:rgba(217,164,65,.08);border:1px solid rgba(217,164,65,.22);
+    padding:2px 8px;border-radius:12px;font-weight:600;
+  }
+  .doc-wrap h2{font-size:18px;font-weight:700;color:var(--text-primary);margin:34px 0 12px;letter-spacing:-.1px;}
+  .doc-wrap h2 .h-num{color:var(--accent-ember-soft);font-family:var(--mono);font-size:14px;margin-right:8px;}
+  .doc-wrap p{line-height:1.75;color:#c8c3bd;margin:0 0 16px;}
+  .doc-wrap strong{color:var(--text-primary);font-weight:600;}
+  .doc-wrap code{
+    font-family:var(--mono);font-size:12px;background:var(--bg-elevated);
+    border:1px solid var(--border);border-radius:4px;padding:1px 6px;color:var(--accent-ember-soft);
+  }
+
+  .tok-table{width:100%;border-collapse:collapse;margin:6px 0 30px;font-size:12.5px;}
+  .tok-table th{
+    text-align:left;color:var(--text-tertiary);font-weight:600;font-size:10.5px;
+    letter-spacing:1px;text-transform:uppercase;padding:0 12px 10px;border-bottom:1px solid var(--border);
+  }
+  .tok-table td{padding:11px 12px;border-bottom:1px solid var(--border-soft);color:#c8c3bd;vertical-align:middle;}
+  .tok-table tr:last-child td{border-bottom:none;}
+  .tok-table .swatch{display:inline-block;width:13px;height:13px;border-radius:4px;margin-right:8px;vertical-align:-2px;border:1px solid rgba(255,255,255,.12);}
+  .tok-table .val{font-family:var(--mono);color:var(--accent-info);}
+
+  .checklist{list-style:none;margin:0 0 30px;padding:0;display:flex;flex-direction:column;gap:9px;}
+  .checklist li{display:flex;align-items:flex-start;gap:10px;color:#c8c3bd;line-height:1.6;font-size:13px;}
+  .chk{
+    width:16px;height:16px;border-radius:5px;border:1.5px solid var(--border);flex:none;margin-top:2px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .chk.done{background:var(--success);border-color:var(--success);}
+  .chk.done svg{width:10px;height:10px;color:#0c0e10;}
+  .chk.pending{background:transparent;}
+  .checklist li.done span{color:var(--text-tertiary);text-decoration:line-through;text-decoration-color:var(--border);}
+
+  .callout{
+    display:flex;gap:10px;padding:14px 16px;border-radius:10px;margin:0 0 28px;
+    background:rgba(123,160,176,.07);border:1px solid rgba(123,160,176,.22);
+  }
+  .callout svg{width:16px;height:16px;color:var(--accent-info);flex:none;margin-top:1px;}
+  .callout p{margin:0;color:#b9c7cd;font-size:12.5px;line-height:1.6;}
+
+  /* ---------- code render ---------- */
+  .code-wrap{padding:0;height:100%;display:flex;font-family:var(--mono);font-size:12.5px;line-height:1.9;}
+  .code-gutter{
+    padding:20px 14px 20px 20px;text-align:right;color:var(--text-tertiary);
+    background:var(--bg-panel);border-right:1px solid var(--border);user-select:none;
+  }
+  .code-body{padding:20px 26px;white-space:pre;overflow-x:auto;flex:1;}
+  .tk-h{color:var(--accent-ember-soft);font-weight:700;}
+  .tk-b{color:var(--text-primary);font-weight:700;}
+  .tk-c{color:var(--text-tertiary);}
+  .tk-t{color:var(--accent-info);}
+  .tk-k{color:var(--accent-gold);}
+  .tk-s{color:#8fbf8a;}
+
+  /* ---------- mesa de revisao ---------- */
+  .mesa-wrap{padding:30px 34px 60px;}
+  .mesa-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:22px;}
+  .mesa-head h2{margin:0;font-size:18px;font-weight:700;color:var(--text-primary);}
+  .mesa-head span{color:var(--text-tertiary);font-size:12px;}
+  .mesa-filters{display:flex;gap:8px;margin-bottom:22px;}
+  .mesa-filter{font-size:11.5px;padding:5px 12px;border-radius:16px;border:1px solid var(--border);color:var(--text-secondary);cursor:pointer;}
+  .mesa-filter.on{background:rgba(232,121,44,.14);border-color:rgba(232,121,44,.35);color:var(--accent-ember-soft);}
+  .mesa-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+  .mesa-card{background:var(--bg-panel);border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:var(--shadow-panel);}
+  .mesa-thumb{height:150px;position:relative;display:flex;align-items:flex-end;padding:12px;}
+  .mesa-thumb.social{background:linear-gradient(135deg,#7a3f9d,#c94f8f);}
+  .mesa-thumb.ads{background:linear-gradient(135deg,#1f6f8f,#38b6b0);}
+  .mesa-thumb.cine{background:linear-gradient(135deg,#8a3f1f,#e0894a);}
+  .mesa-thumb::after{content:'';position:absolute;inset:0;}
+  .mesa-thumb .agent-tag{
+    position:relative;z-index:1;font-size:10.5px;font-weight:700;letter-spacing:.4px;color:#fff;
+    background:rgba(0,0,0,.32);backdrop-filter:blur(2px);padding:4px 9px;border-radius:20px;
+  }
+  .mesa-status{position:absolute;top:10px;right:10px;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;z-index:1;}
+  .mesa-status.aprovado{background:rgba(111,174,127,.9);color:#0c1a0f;}
+  .mesa-status.revisao{background:rgba(217,164,65,.92);color:#1c1305;}
+  .mesa-status.pendente{background:rgba(154,148,144,.35);color:#eee;border:1px solid rgba(255,255,255,.2);}
+  .mesa-body{padding:12px 14px 14px;}
+  .mesa-name{font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:4px;}
+  .mesa-meta{font-size:11px;color:var(--text-tertiary);display:flex;justify-content:space-between;}
+
+  /* ================= STATUS BAR ================= */
+  .statusbar{
+    grid-column:1/-1;
+    background:linear-gradient(180deg,#15181b,var(--bg-panel));
+    border-top:1px solid var(--border);
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 14px;font-size:11px;color:var(--text-tertiary);
+  }
+  .sb-group{display:flex;align-items:center;gap:14px;}
+  .sb-item{display:flex;align-items:center;gap:5px;}
+  .sb-item svg{width:11px;height:11px;}
+  .sb-item.brand-dot::before{content:'';width:7px;height:7px;border-radius:2px;background:var(--accent-info);display:inline-block;}
+</style>
+</head>
+<body>
+
+  <!-- ================= TOPBAR ================= -->
+  <div class="topbar">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4 9L2.5 4.5L7 7.2" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" style="color:var(--accent-ember-soft)"/>
+        <path d="M20 9L21.5 4.5L17 7.2" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" style="color:var(--accent-ember-soft)"/>
+        <path d="M4 9C4 9 5 15.5 8.2 18.2C9.6 19.4 10.7 20 12 20C13.3 20 14.4 19.4 15.8 18.2C19 15.5 20 9 20 9C17.7 7.6 15 7.2 12 7.2C9 7.2 6.3 7.6 4 9Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" style="color:var(--accent-ember)"/>
+        <circle cx="9.7" cy="12.4" r="1" fill="var(--text-primary)"/>
+        <circle cx="14.3" cy="12.4" r="1" fill="var(--text-primary)"/>
+        <path d="M11.2 15.1C11.6 15.5 12.4 15.5 12.8 15.1" stroke="var(--accent-ember-soft)" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <div class="brand-name"><b>Espia</b></div>
+      </div>
+      <span class="brand-tag">boca da toca</span>
+    </div>
+
+    <div class="breadcrumb">
+      <span class="seg">clientes</span><span class="sep">/</span>
+      <span class="seg">marcio-medeiros-educacao</span><span class="sep">/</span>
+      <span class="seg">shared</span><span class="sep">/</span>
+      <span class="seg">identidade-visual</span><span class="sep">/</span>
+      <span class="seg file"><span class="dot-md"></span>system_designer.md</span>
+    </div>
+
+    <div class="topbar-search">
+      <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M20 20L16.4 16.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <span>Buscar no hub...</span>
+      <kbd>Ctrl K</kbd>
+    </div>
+
+    <div class="topbar-actions">
+      <div class="icon-btn" title="Notificacoes">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 9a6 6 0 0112 0c0 5 2 6 2 6H4s2-1 2-6z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M10 20a2 2 0 004 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </div>
+      <div class="icon-btn" title="Configuracoes">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/><path d="M19 12a7 7 0 00-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 00-2-1.2L14.2 3H9.8l-.4 2.6a7 7 0 00-2 1.2l-2.3-.9-2 3.4 2 1.5A7 7 0 005 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.3-.9c.6.5 1.3.9 2 1.2l.4 2.6h4.4l.4-2.6c.7-.3 1.4-.7 2-1.2l2.3.9 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="avatar">NF</div>
+    </div>
+  </div>
+
+  <!-- ================= BODY ================= -->
+  <div class="body">
+
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar">
+      <div class="sidebar-head">
+        <span>Explorador . claude-projetos</span>
+      </div>
+      <div class="tree-scroll" id="tree">
+
+        <div class="tree-item folder open" data-target="t-agents">
+          <svg class="chev" viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="folder-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6a1 1 0 011-1h5l2 2h9a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V6z"/></svg>
+          <span class="tree-label">AGENTS</span>
+        </div>
+        <div class="tree-children" id="t-agents">
+          <div class="tree-item folder" data-target="t-kacio">
+            <svg class="chev" viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <svg class="folder-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6a1 1 0 011-1h5l2 2h9a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V6z"/></svg>
+            <span class="tree-label">kacio-ui</span>
+          </div>
+          <div class="tree-children collapsed" id="t-kacio">
+            <div class="tree-item file"><span class="fico md">M</span><span class="tree-label">prompt.md</span></div>
+            <div class="tree-item file"><span class="fico md">M</span><span class="tree-label">LICOES.md</span></div>
+          </div>
+          <div class="tree-item folder" data-target="t-nyc">
+            <svg class="chev" viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <svg class="folder-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6a1 1 0 011-1h5l2 2h9a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V6z"/></svg>
+            <span class="tree-label">nyc-agent</span>
+          </div>
+          <div class="tree-children collapsed" id="t-nyc">
+            <div class="tree-item file"><span class="fico md">M</span><span class="tree-label">skill.md</span></div>
+          </div>
+          <div class="tree-item folder" data-target="t-social">
+            <svg class="chev" viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <svg class="folder-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6a1 1 0 011-1h5l2 2h9a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V6z"/></svg>
+            <span class="tree-label">socialsmith</span>
+          </div>
+          <div class="tree-children collapsed" id="t-social"></div>
+        </div>
+
+        <div class="tree-item folder open" data-target="t-clientes">
+          <svg class="chev" viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="folder-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6a1 1 0 011-1h5l2 2h9a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V6z"/></svg>
+          <span class="tree-label">clientes</span>
+        </div>
+        <div class="tree-children" id="t-clientes">
+          <div class="tree-item folder open" data-target="t-marcio">
+            <svg class="chev" viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <svg class="folder-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6a1 1 0 011-1h5l2 2h9a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V6z"/></svg>
+            <span class="tree-label">marcio-medeiros-educacao</span>
+          </div>
+          <div class="tree-children" id="t-marcio">
+            <div class="tree-item folder open" data-target="t-shared">
+              <svg class="chev" viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <svg class="folder-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6a1 1 0 011-1h5l2 2h9a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V6z"/></svg>
+              <span class="tree-label">shared</span>
+            </div>
+            <div class="tree-children" id="t-shared">
+              <div class="tree-item folder open" data-target="t-idv">
+                <svg class="chev" viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <svg class="folder-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6a1 1 0 011-1h5l2 2h9a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V6z"/></svg>
+                <span class="tree-label">identidade-visual</span>
+              </div>
+              <div class="tree-children" id="t-idv">
+                <div class="tree-item file active"><span class="fico md">M</span><span class="tree-label">system_designer.md</span></div>
+                <div class="tree-item file"><span class="fico html">H</span><span class="tree-label">idv-instagram-preview-v2.html</span></div>
+              </div>
+            </div>
+            <div class="tree-item folder" data-target="t-lanc">
+              <svg class="chev" viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <svg class="folder-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6a1 1 0 011-1h5l2 2h9a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V6z"/></svg>
+              <span class="tree-label">lancamentos</span>
+            </div>
+            <div class="tree-children collapsed" id="t-lanc">
+              <div class="tree-item file"><span class="fico md">M</span><span class="tree-label">roteiro-dia-02.md</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tree-item folder open" data-target="t-projetos">
+          <svg class="chev" viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="folder-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6a1 1 0 011-1h5l2 2h9a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V6z"/></svg>
+          <span class="tree-label">PROJETOS</span>
+        </div>
+        <div class="tree-children" id="t-projetos">
+          <div class="tree-item folder open" data-target="t-espia">
+            <svg class="chev" viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <svg class="folder-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6a1 1 0 011-1h5l2 2h9a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V6z"/></svg>
+            <span class="tree-label">espia</span>
+          </div>
+          <div class="tree-children" id="t-espia">
+            <div class="tree-item folder open" data-target="t-mockup">
+              <svg class="chev" viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <svg class="folder-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6a1 1 0 011-1h5l2 2h9a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V6z"/></svg>
+              <span class="tree-label">mockup</span>
+            </div>
+            <div class="tree-children" id="t-mockup">
+              <div class="tree-item file"><span class="fico html">H</span><span class="tree-label">espia-mockup.html</span></div>
+              <div class="tree-item file"><span class="fico png">P</span><span class="tree-label">ref1-dashboard-agencies.png</span></div>
+              <div class="tree-item file"><span class="fico png">P</span><span class="tree-label">ref5-ai-study-notes.png</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tree-item folder" data-target="t-features">
+          <svg class="chev" viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="folder-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6a1 1 0 011-1h5l2 2h9a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V6z"/></svg>
+          <span class="tree-label">_features</span>
+        </div>
+        <div class="tree-children collapsed" id="t-features">
+          <div class="tree-item file"><span class="fico md">M</span><span class="tree-label">2026-07-02-mcp-enxuto.md</span></div>
+          <div class="tree-item file"><span class="fico md">M</span><span class="tree-label">2026-07-04-evolucao-agentes.md</span></div>
+        </div>
+
+        <div class="tree-item folder" data-target="t-acervo">
+          <svg class="chev" viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="folder-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6a1 1 0 011-1h5l2 2h9a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V6z"/></svg>
+          <span class="tree-label">_acervo</span>
+        </div>
+        <div class="tree-children collapsed" id="t-acervo">
+          <div class="tree-item file"><span class="fico mp4">V</span><span class="tree-label">teste-render-01.mp4</span></div>
+        </div>
+
+        <div class="tree-item folder" data-target="t-infra">
+          <svg class="chev" viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="folder-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6a1 1 0 011-1h5l2 2h9a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V6z"/></svg>
+          <span class="tree-label">_infra</span>
+        </div>
+        <div class="tree-children collapsed" id="t-infra">
+          <div class="tree-item file"><span class="fico py">Py</span><span class="tree-label">checkdia_logger.py</span></div>
+          <div class="tree-item file"><span class="fico wav">A</span><span class="tree-label">transcricao-sample.wav</span></div>
+        </div>
+
+      </div>
+      <div class="sidebar-foot">
+        <span class="pulse"></span> git . feat/cosmos-refino-arquitetura
+      </div>
+    </aside>
+
+    <!-- ================= MAIN ================= -->
+    <main class="main">
+      <div class="view-toolbar">
+        <div class="view-tabs">
+          <div class="view-tab active" id="tab-arquivo" onclick="showView('arquivo')">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M6 2h9l5 5v15H6V2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M15 2v5h5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+            Arquivo
+          </div>
+          <div class="view-tab" id="tab-mesa" onclick="showView('mesa')">
+            <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1.4" stroke="currentColor" stroke-width="1.8"/><rect x="14" y="3" width="7" height="7" rx="1.4" stroke="currentColor" stroke-width="1.8"/><rect x="3" y="14" width="7" height="7" rx="1.4" stroke="currentColor" stroke-width="1.8"/><rect x="14" y="14" width="7" height="7" rx="1.4" stroke="currentColor" stroke-width="1.8"/></svg>
+            Mesa de Revisao
+          </div>
+        </div>
+
+        <div class="eye-code-toggle" id="ec-toggle">
+          <div class="ec-btn eye active" onclick="showMode('eye')">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/></svg>
+            Olho
+          </div>
+          <div class="ec-btn code" onclick="showMode('code')">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M8 6L2 12l6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Codigo
+          </div>
+        </div>
+      </div>
+
+      <div class="content-area">
+
+        <!-- ============ ARQUIVO / OLHO ============ -->
+        <div class="panel" id="panel-eye">
+          <div class="doc-wrap">
+            <span class="doc-eyebrow">Design System . Marcio Medeiros Educacao</span>
+            <h1 class="doc-title">Sistema de Design — Identidade Visual</h1>
+            <div class="doc-meta">
+              <span class="agent-chip">kacio-ui</span>
+              <span class="sep">.</span>
+              <span>atualizado 04/07/2026</span>
+              <span class="sep">.</span>
+              <span>7 min de leitura</span>
+            </div>
+
+            <p>Este documento define os <strong>tokens visuais canonicos</strong> usados em todo material da escola — slides, carrossel de Instagram, landing pages e anuncios. Nenhuma peca sai sem passar por aqui primeiro.</p>
+
+            <h2><span class="h-num">01</span>Paleta de marca</h2>
+            <p>Duas cores estruturam 100% da identidade: o navy profundo como base de autoridade e o dourado como acento de decisao. Uso em <code>60-30-10</code>, nunca em proporcao igual.</p>
+
+            <table class="tok-table">
+              <thead><tr><th>Token</th><th>Valor</th><th>Uso</th></tr></thead>
+              <tbody>
+                <tr><td><span class="swatch" style="background:#050d1a"></span>navy-base</td><td class="val">#050d1a</td><td>fundo dominante, autoridade</td></tr>
+                <tr><td><span class="swatch" style="background:#c9a84c"></span>gold-accent</td><td class="val">#c9a84c</td><td>CTA, destaque, sublabel</td></tr>
+                <tr><td><span class="swatch" style="background:#5a5a6e"></span>ink-muted</td><td class="val">#5a5a6e</td><td>rodape, metadado</td></tr>
+                <tr><td><span class="swatch" style="background:#f4f1ec"></span>off-white</td><td class="val">#f4f1ec</td><td>modo claro, respiro</td></tr>
+              </tbody>
+            </table>
+
+            <h2><span class="h-num">02</span>Tipografia</h2>
+            <p>Albert Sans <strong>ultra-bold</strong> como primaria de impacto. Lora <em>italico</em> restrita a sublabels e citacoes — nunca em corpo de texto extenso.</p>
+
+            <div class="callout">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 16.5h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="9.5" stroke="currentColor" stroke-width="1.6"/></svg>
+              <p>Letter-spacing de 4px em titulos de slide. Gradiente linear sutil no fundo, textura de grid entre 2% e 3% de opacidade — nunca mais que isso.</p>
+            </div>
+
+            <h2><span class="h-num">03</span>Checklist de aplicacao</h2>
+            <ul class="checklist">
+              <li class="done"><span class="chk done"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12l5 5L20 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>Rodape padrao em todos os slides (11px, #5a5a6e, canto inferior direito)</span></li>
+              <li class="done"><span class="chk done"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12l5 5L20 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span>Arquetipos definidos: Anchor, Split, Slash, Column</span></li>
+              <li><span class="chk pending"></span><span>Revisar contraste WCAG AA nas variacoes modo White</span></li>
+              <li><span class="chk pending"></span><span>Publicar guia de aplicacao para o adsmith (formatos de anuncio)</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- ============ ARQUIVO / CODIGO ============ -->
+        <div class="panel hidden" id="panel-code">
+          <div class="code-wrap">
+            <div class="code-gutter" id="gutter"></div>
+            <div class="code-body"><span class="tk-h"># Sistema de Design — Identidade Visual</span>
+
+<span class="tk-c">&gt; Design System . Marcio Medeiros Educacao</span>
+<span class="tk-c">&gt; agente: kacio-ui . atualizado 04/07/2026</span>
+
+<span class="tk-h">## 01. Paleta de marca</span>
+
+Duas cores estruturam 100% da identidade: o navy profundo como
+base de autoridade e o dourado como acento de decisao. Uso em
+<span class="tk-t">60-30-10</span>, nunca em proporcao igual.
+
+<span class="tk-k">| Token       | Valor    | Uso                        |</span>
+<span class="tk-k">|-------------|----------|----------------------------|</span>
+<span class="tk-k">| navy-base   |</span> <span class="tk-s">#050d1a</span> <span class="tk-k">| fundo dominante            |</span>
+<span class="tk-k">| gold-accent |</span> <span class="tk-s">#c9a84c</span> <span class="tk-k">| CTA, destaque              |</span>
+<span class="tk-k">| ink-muted   |</span> <span class="tk-s">#5a5a6e</span> <span class="tk-k">| rodape, metadado           |</span>
+<span class="tk-k">| off-white   |</span> <span class="tk-s">#f4f1ec</span> <span class="tk-k">| modo claro, respiro        |</span>
+
+<span class="tk-h">## 02. Tipografia</span>
+
+Albert Sans <span class="tk-b">ultra-bold</span> como primaria de impacto.
+Lora <span class="tk-t">italico</span> restrita a sublabels e citacoes.
+
+<span class="tk-h">## 03. Checklist de aplicacao</span>
+
+<span class="tk-t">[x]</span> Rodape padrao em todos os slides
+<span class="tk-t">[x]</span> Arquetipos definidos: Anchor, Split, Slash, Column
+<span class="tk-t">[ ]</span> Revisar contraste WCAG AA no modo White
+<span class="tk-t">[ ]</span> Publicar guia de aplicacao para o adsmith
+</div>
+          </div>
+        </div>
+
+        <!-- ============ MESA DE REVISAO ============ -->
+        <div class="panel hidden" id="panel-mesa">
+          <div class="mesa-wrap">
+            <div class="mesa-head">
+              <h2>Mesa de Revisao</h2>
+              <span>6 entregas . 3 agentes</span>
+            </div>
+            <div class="mesa-filters">
+              <span class="mesa-filter on">Todos</span>
+              <span class="mesa-filter">socialsmith</span>
+              <span class="mesa-filter">adsmith</span>
+              <span class="mesa-filter">cinesmith</span>
+            </div>
+            <div class="mesa-grid">
+
+              <div class="mesa-card">
+                <div class="mesa-thumb social">
+                  <span class="mesa-status aprovado">Aprovado</span>
+                  <span class="agent-tag">socialsmith</span>
+                </div>
+                <div class="mesa-body">
+                  <div class="mesa-name">carrossel-inss-obra-07.png</div>
+                  <div class="mesa-meta"><span>1080x1350</span><span>1.8 MB</span></div>
+                </div>
+              </div>
+
+              <div class="mesa-card">
+                <div class="mesa-thumb ads">
+                  <span class="mesa-status revisao">Em revisao</span>
+                  <span class="agent-tag">adsmith</span>
+                </div>
+                <div class="mesa-body">
+                  <div class="mesa-name">ad-reforma-tributaria-v3.png</div>
+                  <div class="mesa-meta"><span>1080x1080</span><span>920 KB</span></div>
+                </div>
+              </div>
+
+              <div class="mesa-card">
+                <div class="mesa-thumb cine">
+                  <span class="mesa-status pendente">Pendente</span>
+                  <span class="agent-tag">cinesmith</span>
+                </div>
+                <div class="mesa-body">
+                  <div class="mesa-name">reels-depoimento-aluno-04.mp4</div>
+                  <div class="mesa-meta"><span>1080x1920</span><span>00:42</span></div>
+                </div>
+              </div>
+
+              <div class="mesa-card">
+                <div class="mesa-thumb social">
+                  <span class="mesa-status aprovado">Aprovado</span>
+                  <span class="agent-tag">socialsmith</span>
+                </div>
+                <div class="mesa-body">
+                  <div class="mesa-name">post-unico-cinematic-02.png</div>
+                  <div class="mesa-meta"><span>1080x1350</span><span>2.1 MB</span></div>
+                </div>
+              </div>
+
+              <div class="mesa-card">
+                <div class="mesa-thumb ads">
+                  <span class="mesa-status revisao">Em revisao</span>
+                  <span class="agent-tag">adsmith</span>
+                </div>
+                <div class="mesa-body">
+                  <div class="mesa-name">banner-imersao-contabilidade.png</div>
+                  <div class="mesa-meta"><span>1200x628</span><span>640 KB</span></div>
+                </div>
+              </div>
+
+              <div class="mesa-card">
+                <div class="mesa-thumb cine">
+                  <span class="mesa-status aprovado">Aprovado</span>
+                  <span class="agent-tag">cinesmith</span>
+                </div>
+                <div class="mesa-body">
+                  <div class="mesa-name">avatar-lipsync-teste-render.mp4</div>
+                  <div class="mesa-meta"><span>1080x1080</span><span>00:20</span></div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- ================= STATUS BAR ================= -->
+  <div class="statusbar">
+    <div class="sb-group">
+      <span class="sb-item brand-dot">Markdown</span>
+      <span class="sb-item">UTF-8</span>
+      <span class="sb-item">LF</span>
+      <span class="sb-item">Ln 42, Col 8</span>
+    </div>
+    <div class="sb-group">
+      <span class="sb-item">4,1 KB</span>
+      <span class="sb-item">clientes/marcio-medeiros-educacao</span>
+      <span class="sb-item">Espia v0.1</span>
+    </div>
+  </div>
+
+<script>
+  document.querySelectorAll('.tree-item.folder').forEach(function(el){
+    el.addEventListener('click', function(){
+      var target = document.getElementById(el.getAttribute('data-target'));
+      if(!target) return;
+      el.classList.toggle('open');
+      target.classList.toggle('collapsed');
+    });
+  });
+
+  document.querySelectorAll('.tree-item.file').forEach(function(el){
+    el.addEventListener('click', function(){
+      document.querySelectorAll('.tree-item.file.active').forEach(function(a){a.classList.remove('active');});
+      el.classList.add('active');
+    });
+  });
+
+  function showView(view){
+    document.getElementById('tab-arquivo').classList.toggle('active', view === 'arquivo');
+    document.getElementById('tab-mesa').classList.toggle('active', view === 'mesa');
+    document.getElementById('ec-toggle').style.visibility = view === 'arquivo' ? 'visible' : 'hidden';
+    document.getElementById('panel-mesa').classList.toggle('hidden', view !== 'mesa');
+    if(view === 'arquivo'){
+      var mode = document.querySelector('.ec-btn.active').classList.contains('code') ? 'code' : 'eye';
+      showMode(mode);
+    } else {
+      document.getElementById('panel-eye').classList.add('hidden');
+      document.getElementById('panel-code').classList.add('hidden');
+    }
+  }
+
+  function showMode(mode){
+    document.querySelectorAll('.ec-btn').forEach(function(b){ b.classList.remove('active'); });
+    document.querySelector('.ec-btn.' + mode).classList.add('active');
+    document.getElementById('panel-eye').classList.toggle('hidden', mode !== 'eye');
+    document.getElementById('panel-code').classList.toggle('hidden', mode !== 'code');
+  }
+
+  (function(){
+    var body = document.querySelector('#panel-code .code-body');
+    var lines = body.textContent.split(String.fromCharCode(10)).length;
+    var gutter = document.getElementById('gutter');
+    var out = '';
+    for(var i = 1; i <= lines; i++){ out += i + String.fromCharCode(10); }
+    gutter.textContent = out;
+  })();
+</script>
+</body>
+</html>

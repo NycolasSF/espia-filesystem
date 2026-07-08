@@ -1,0 +1,9 @@
+node_modules/
+*.log
+
+# estado local de aprovação (por pasta do hub, não pertence ao repo do app)
+.espia.json
+.espia-tmp-*
+
+# referências de design: screenshots de terceiros (Dribbble), material de estudo — não redistribuir
+mockup/referencias/
